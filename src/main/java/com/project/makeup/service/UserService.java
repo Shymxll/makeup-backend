@@ -18,6 +18,9 @@ import com.project.makeup.entity.User;
 import com.project.makeup.repository.UserRepository;
 import com.project.makeup.response.GenericResponse;
 import com.project.makeup.response.UserReadResponse;
+import com.project.makeup.util.CryptUtil;
+
+
 
 @Service
 public class UserService {
@@ -40,7 +43,7 @@ public class UserService {
                         .name(userCreateDto.getName())
                         .surname(userCreateDto.getSurname())
                         .email(userCreateDto.getEmail())
-                        .password(encodePassword(userCreateDto.getPassword()))
+                        .password(CryptUtil.encode(userCreateDto.getPassword()))
                         .username(userCreateDto.getUsername())
                         .role("USER")
                         .build();
@@ -66,14 +69,14 @@ public class UserService {
                 && !userUpdateDto.getPassword().equals("") && !userUpdateDto.getUsername().equals("")) {
             // get user from database
             try {
-                long decodedId = Long.parseLong(decodePassword(userUpdateDto.getId().toString()));
+                long decodedId = Long.parseLong(CryptUtil.decode(userUpdateDto.getId().toString()));
                 Optional<User> user = userRepository.findById(decodedId);
                 // update user
                 if (user.isPresent()) {
                     user.get().setName(userUpdateDto.getName());
                     user.get().setSurname(userUpdateDto.getSurname());
                     user.get().setEmail(userUpdateDto.getEmail());
-                    user.get().setPassword(encodePassword(userUpdateDto.getPassword()));
+                    user.get().setPassword(CryptUtil.encode(userUpdateDto.getPassword()));
                     user.get().setUsername(userUpdateDto.getUsername());
                     userRepository.save(user.get());
                     return new GenericResponse("0", "User updated", null);
@@ -92,7 +95,7 @@ public class UserService {
 
         // delete user from database
         if (!userDeleteDto.getId().equals("")) {
-            long decodedId = Long.parseLong(decodePassword(userDeleteDto.getId().toString()));
+            long decodedId = Long.parseLong(CryptUtil.decode(userDeleteDto.getId().toString()));
             // get user from database
             try {
                 if (userRepository.findById(decodedId).get() != null) {
@@ -135,7 +138,7 @@ public class UserService {
         // read user from database
         if (!userReadDto.getId().equals("")) {
             System.out.println("id: " + userReadDto.getId());
-            String id =  decodePassword(userReadDto.getId());
+            String id =  CryptUtil.decode(userReadDto.getId());
             System.out.println("id: " + id);
             //convert string to long
             long decodedId = Long.valueOf(id);
@@ -165,8 +168,8 @@ public class UserService {
                 User user = userRepository.findByUsername(loginDto.getUsername());
 
                 if (user != null) {
-                    if (decodePassword(user.getPassword()).equals(loginDto.getPassword())) {
-                        return new GenericResponse("0", "Login successful", encodePassword(user.getId().toString()));
+                    if (CryptUtil.decode(user.getPassword()).equals(loginDto.getPassword())) {
+                        return new GenericResponse("0", "Login successful", CryptUtil.encode(user.getId().toString()));
                     } else {
                         return new GenericResponse("1", "Wrong password", null);
                     }
@@ -181,16 +184,6 @@ public class UserService {
         }
     }
 
-    public String encodePassword(String password) {
-        byte[] encodedBytes = Base64.getEncoder().encode(password.getBytes(StandardCharsets.UTF_8));
-        String encodedString = new String(encodedBytes, StandardCharsets.UTF_8);
-        return encodedString;
-    }
-
-    public String decodePassword(String password) {
-        byte[] decodedBytes = Base64.getDecoder().decode(password.getBytes(StandardCharsets.UTF_8));
-        String decodedString = new String(decodedBytes, StandardCharsets.UTF_8);
-        return decodedString;
-    }
+   
 
 }

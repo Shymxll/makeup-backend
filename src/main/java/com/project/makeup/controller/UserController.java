@@ -34,34 +34,34 @@ public class UserController {
     public GenericResponse createUser(@RequestBody UserCreateDto userCreateDto){
 
         
-        return userService.createUser(userCreateDto);
+        return this.userService.createUser(userCreateDto);
     }
 
     @GetMapping("/all")
     public GenericResponse getUsers(){
-        return userService.readAllUser();
+        return this.userService.readAllUser();
     }
 
     @PostMapping("/id")
     public GenericResponse getUser(@RequestBody UserReadDto userReadDto){
-       return userService.readUser(userReadDto);
+       return this.userService.readUser(userReadDto);
       
     }
 
     @PostMapping("/login")
     public GenericResponse login(@RequestBody LoginDto loginDto){
-        return userService.login(loginDto);
+        return this.userService.login(loginDto);
     }
 
     
     @PostMapping("/delete")
     public GenericResponse deleteUser(@RequestBody  UserDeleteDto userDeleteDto){
-        return userService.deleteUser(userDeleteDto);
+        return this.userService.deleteUser(userDeleteDto);
     }
 
     @PostMapping("/update")
     public GenericResponse updateUser(@RequestBody UserUpdateDto userUpdateDto){
-        return userService.updateUser(userUpdateDto);
+        return this.userService.updateUser(userUpdateDto);
     }
     
 }
