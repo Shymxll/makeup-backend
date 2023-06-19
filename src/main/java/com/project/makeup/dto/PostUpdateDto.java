@@ -1,11 +1,12 @@
 package com.project.makeup.dto;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import lombok.Data;
 
 @Data
 public class PostUpdateDto {
-    private Long id;
-    private String type;
+    private String id;
     private String text;
-    private String image;
+    private MultipartFile data;
 }

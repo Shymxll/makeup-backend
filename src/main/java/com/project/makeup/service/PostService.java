@@ -1,13 +1,16 @@
 package com.project.makeup.service;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
+
 
 import com.project.makeup.dto.PostCreateDto;
 import com.project.makeup.dto.PostDeleteDto;
@@ -21,7 +24,6 @@ import com.project.makeup.response.GenericResponse;
 import com.project.makeup.response.PostReadResponse;
 import com.project.makeup.util.CryptUtil;
 import com.project.makeup.util.ImageUtil;
-
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,39 +39,53 @@ public class PostService {
         this.userRepository = userRepository;
     }
 
-    public String uploadPhoto(MultipartFile file, String username, String currentMillis) throws IOException {
-        String folderPath = "src/main/resources/file";
-
-        File folder = new File(folderPath);
-
-        if (!folder.exists()) {
-            boolean created = folder.mkdirs();
+    public String uploadPhoto(MultipartFile file, String imageName) throws IOException {
+        String directoryPath = "src/main/resources/file/";
+        File directory = new File(directoryPath);
+        if (!directory.exists()) {
+            directory.mkdirs(); // Yeni klasör oluşturur
         }
-        Path filePath = Path.of(folderPath, username + "_" + currentMillis);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        return filePath.toString();
-
+        // type file
+        String type = file.getContentType().split("/")[1];
+        System.out.println(type);
+        String newName = imageName + "." + type;
+        System.out.println(newName);
+        String filePath = directoryPath + imageName + "." + file.getContentType().split("/")[1];
+        File tardownloadData = new File(filePath);
+        FileOutputStream outputStream = new FileOutputStream(tardownloadData);
+        FileCopyUtils.copy(file.getInputStream(), outputStream);
+        outputStream.close();
+        return filePath;
     }
 
     // post creation
-    public GenericResponse createPhoto(PostCreateDto postCreateDto) {
+    public GenericResponse createData(PostCreateDto postCreateDto) {
         String text = postCreateDto.getText();
-        //decode user id from postCreateDto and find user by id
+        // decode user id from postCreateDto and find user by id
         long decodedId = Long.parseLong(CryptUtil.decode(postCreateDto.getUserId()));
         Optional<User> user = this.userRepository.findById(decodedId);
         if (user.isPresent()) {
             // if text is empty and image is not empty
-            if(text.equals("") && postCreateDto.getImage().isEmpty()){
+            if (text.equals("") && postCreateDto.getData().isEmpty()) {
                 return new GenericResponse("1", "Fill all fields", null);
             }
             try {
-                //
+                // create image name
+                String imageName = user.get().getName() + "_" + System.currentTimeMillis();
+                // get image path
+                String dataPath = uploadPhoto(postCreateDto.getData(), imageName);
+
                 var post = Post.builder()
                         .user(user.get())
                         .text(postCreateDto.getText())
-                        .imageName(text.equals("") ? (user.get().getName() + "_" + System.currentTimeMillis()) : "")   // if text is empty then image name will be user name + current time
-                        .imageData(text.equals("") ? ImageUtil.compressImage(postCreateDto.getImage().getBytes()) : null)// if text is empty then image data will be compressed image
+                        .dataPath(text.equals("") ? dataPath : null)
                         .build();
+                // check if uploaded
+                if (uploadPhoto(postCreateDto.getData(), imageName).equals("null")) {
+                    System.out.println("image: Lets");
+                    return new GenericResponse("1", "Data not upload", null);
+                }
+
                 this.postRepository.save(post);
                 return new GenericResponse("0", "Post created", null);
             } catch (Exception e) {
@@ -81,44 +97,100 @@ public class PostService {
 
     }
 
-    public byte[] downloadImage(String imageName) {
-        Optional<Post> dbImageData = this.postRepository.findByImageName(imageName);
-        byte[] images = ImageUtil.decompressImage(dbImageData.get().getImageData());
-        return images;
-    }
-
     // post update
 
     public GenericResponse updatePost(PostUpdateDto postUpdateDto) {
-        return null;
+        String id = CryptUtil.decode(postUpdateDto.getId());
+        Optional<Post> post = this.postRepository.findById(Long.parseLong(id));
+        if (post.isPresent()) {
+            try {
+                // if text is empty and image is not empty
+                if (postUpdateDto.getText().equals("") && postUpdateDto.getData().isEmpty()) {
+                    return new GenericResponse("1", "Fill all fields", null);
+                }
+                // create image name
+                String imageName = post.get().getUser().getName() + "_" + System.currentTimeMillis();
+                // get image path
+                String dataPath = uploadPhoto(postUpdateDto.getData(), imageName);
+                post.get().setText(postUpdateDto.getText());
+                post.get().setDataPath(postUpdateDto.getText().equals("") ? dataPath : null);
+                this.postRepository.save(post.get());
+                return new GenericResponse("0", "Post updated", null);
+            } catch (Exception e) {
+                return new GenericResponse("1", "Post not updated", e.getMessage());
+            }
+        } else {
+            return new GenericResponse("1", "Post not found", null);
+        }
     }
 
     // post deletion
     public GenericResponse deletePost(PostDeleteDto postDeleteDto) {
-        return null;
+        String id = CryptUtil.decode(postDeleteDto.getId());
+        Optional<Post> post = this.postRepository.findById(Long.parseLong(id));
+        if (post.isPresent()) {
+            this.postRepository.delete(post.get());
+            //delete file from directory
+            try {
+                 File file = new File(post.get().getDataPath());
+                 file.delete();
+            } catch (Exception e) {
+               return new GenericResponse("1", "Data not found", null);
+            }
+           
+            return new GenericResponse("0", "Post deleted", null);
+        } else {
+            return new GenericResponse("1", "Post not found", null);
+        }
     }
 
     // post read
     public GenericResponse readPost(PostReadDto postReadDto) {
-        return null;
+       String id = CryptUtil.decode(postReadDto.getId());
+         Optional<Post> post = this.postRepository.findById(Long.parseLong(id));
+            if (post.isPresent()) {
+                PostReadResponse postReadResponse = PostReadResponse.builder()
+                        .id(CryptUtil.encode(post.get().getId().toString()))
+                        .text(post.get().getText().equals("") ? null : post.get().getText())
+                        .dataPath(post.get().getText().equals("") ? post.get().getDataPath() : null)
+                        .build();
+                return new GenericResponse("0", "Post found", postReadResponse);
+            } else {
+                return new GenericResponse("1", "Post not found", null);
+            }
     }
 
-    public GenericResponse readAllPost() {
+    public GenericResponse readAllPost() throws IOException {
         List<Post> posts = postRepository.findAll();
-        if(!posts.isEmpty()){
+        if (!posts.isEmpty()) {
             List<PostReadResponse> postReadResponses = new ArrayList<>();
-            for(Post post : posts){
+            for (Post post : posts) {
                 PostReadResponse postReadResponse = PostReadResponse.builder()
-                    .id(CryptUtil.encode(post.getId().toString()))
-                    .text(post.getText().equals("") ? null : post.getText())
-                    .imageUrl("url?")
-                    .build();
+                        .id(CryptUtil.encode(post.getId().toString()))
+                        .text(post.getText().equals("") ? null : post.getText())
+                        .dataPath(post.getText().equals("") ? post.getDataPath() : null)
+                        .build();
                 postReadResponses.add(postReadResponse);
             }
             return new GenericResponse("0", "Posts found", postReadResponses);
-        }else{
+        } else {
             return new GenericResponse("1", "No post found", null);
         }
+
     }
+
+    public byte[] downloadData(String filePath) throws IOException {
+        String directoryPath = "src/main/resources/file/";
+        File directory = new File(directoryPath);
+        if (!directory.exists()) {
+            directory.mkdirs(); // Yeni klasör oluşturur
+        }
+
+        File file = new File(filePath);
+        byte[] fileContent = Files.readAllBytes(file.toPath());
+        return fileContent;
+    }
+
+
 
 }

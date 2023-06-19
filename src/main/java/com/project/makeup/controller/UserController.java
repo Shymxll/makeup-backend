@@ -3,6 +3,7 @@ package com.project.makeup.controller;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,8 +18,10 @@ import com.project.makeup.dto.UserUpdateDto;
 import com.project.makeup.response.GenericResponse;
 import com.project.makeup.service.UserService;
 
+import io.swagger.annotations.SwaggerDefinition;
 import lombok.extern.java.Log;
 
+@CrossOrigin
 @RestController
 @RequestMapping("api/v1/user")
 public class UserController {

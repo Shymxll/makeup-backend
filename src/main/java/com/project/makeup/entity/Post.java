@@ -40,9 +40,7 @@ public class Post {
     @JsonIgnore
     private User user;
     private String text;
-    private String imageName;
-    @Lob
-    @Column(name = "image_data", length = 1000)
-    private byte[] imageData;
+    private String dataPath;
+   
 
 }

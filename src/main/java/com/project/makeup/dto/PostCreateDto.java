@@ -12,5 +12,5 @@ import lombok.Data;
 public class PostCreateDto {
     private String userId;
     private String text;
-    private MultipartFile image;
+    private MultipartFile data;
 }
