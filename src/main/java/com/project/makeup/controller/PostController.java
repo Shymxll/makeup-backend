@@ -76,7 +76,9 @@ public class PostController {
 
     //get file endpoint
     @GetMapping(value = "/file", produces = MediaType.IMAGE_JPEG_VALUE)
-    public ResponseEntity<?> getFile(@RequestParam String filePath) throws IOException {
-        return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.IMAGE_JPEG).body(this.postService.downloadData(filePath));
+    public ResponseEntity<?> getFile(@RequestParam String filePath,@RequestParam String userId) throws IOException {
+        return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.IMAGE_JPEG).body(this.postService.downloadData(filePath,userId));
     }
+
+
 }

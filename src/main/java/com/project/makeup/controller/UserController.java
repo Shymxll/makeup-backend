@@ -66,5 +66,10 @@ public class UserController {
     public GenericResponse updateUser(@RequestBody UserUpdateDto userUpdateDto){
         return this.userService.updateUser(userUpdateDto);
     }
+
+    @GetMapping("/ranklist")
+    public GenericResponse getRankList(){
+        return this.userService.getRankList();
+    }
     
 }

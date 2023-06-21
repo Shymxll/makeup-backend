@@ -184,6 +184,41 @@ public class UserService {
         }
     }
 
+    public GenericResponse getRankList() {
+        ArrayList<UserReadResponse> usersResponseData = new ArrayList<UserReadResponse>();
+        // read all users from database
+        try {
+            ArrayList<User> users = (ArrayList<User>) userRepository.findAll();
+            users = sortByScore(users);
+            for (User user : users) {
+                usersResponseData.add(UserReadResponse
+                        .builder()
+                        .name(user.getName())
+                        .surname(user.getSurname())
+                        .email(user.getEmail())
+                        .username(user.getUsername()).build());
+            }
+            return new GenericResponse("0", "Users read", usersResponseData);
+        } catch (Exception e) {
+            return new GenericResponse("1", "Users not read", e.getMessage());
+        }
+    }
+
+    //sort by score
+    public ArrayList sortByScore(ArrayList<User> users) {
+       //sort users by score
+        for (int i = 0; i < users.size(); i++) {
+            for (int j = 0; j < users.size(); j++) {
+                if (users.get(i).getScore() > users.get(j).getScore()) {
+                    User temp = users.get(i);
+                    users.set(i, users.get(j));
+                    users.set(j, temp);
+                }
+            }
+        }
+        return users;
+    }
+
    
 
 }

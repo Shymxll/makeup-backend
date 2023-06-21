@@ -61,6 +61,8 @@ public class PostService {
     // post creation
     public GenericResponse createData(PostCreateDto postCreateDto) {
         String text = postCreateDto.getText();
+        String dataPath = "";
+        String imageName = "";
         // decode user id from postCreateDto and find user by id
         long decodedId = Long.parseLong(CryptUtil.decode(postCreateDto.getUserId()));
         Optional<User> user = this.userRepository.findById(decodedId);
@@ -70,16 +72,31 @@ public class PostService {
                 return new GenericResponse("1", "Fill all fields", null);
             }
             try {
+                if(postCreateDto.getText().equals("")){
                 // create image name
-                String imageName = user.get().getName() + "_" + System.currentTimeMillis();
+                imageName = user.get().getName() + "_" + System.currentTimeMillis();
                 // get image path
-                String dataPath = uploadPhoto(postCreateDto.getData(), imageName);
+                dataPath = uploadPhoto(postCreateDto.getData(), imageName);
+                }
 
                 var post = Post.builder()
                         .user(user.get())
                         .text(postCreateDto.getText())
                         .dataPath(text.equals("") ? dataPath : null)
                         .build();
+
+                var upgradeUser = User.builder()
+                        .id(user.get().getId())
+                        .name(user.get().getName())
+                        .surname(user.get().getSurname())
+                        .email(user.get().getEmail())
+                        .password(user.get().getPassword())
+                        .username(user.get().getUsername())
+                        .score(user.get().getScore()+1)
+                        .role(user.get().getRole())
+                        .build();
+
+                
                 // check if uploaded
                 if (uploadPhoto(postCreateDto.getData(), imageName).equals("null")) {
                     System.out.println("image: Lets");
@@ -87,6 +104,7 @@ public class PostService {
                 }
 
                 this.postRepository.save(post);
+                this.userRepository.save(upgradeUser);
                 return new GenericResponse("0", "Post created", null);
             } catch (Exception e) {
                 return new GenericResponse("1", "Post not created", e.getMessage());
@@ -101,6 +119,7 @@ public class PostService {
 
     public GenericResponse updatePost(PostUpdateDto postUpdateDto) {
         String id = CryptUtil.decode(postUpdateDto.getId());
+        String dataPath = "";
         Optional<Post> post = this.postRepository.findById(Long.parseLong(id));
         if (post.isPresent()) {
             try {
@@ -109,9 +128,12 @@ public class PostService {
                     return new GenericResponse("1", "Fill all fields", null);
                 }
                 // create image name
-                String imageName = post.get().getUser().getName() + "_" + System.currentTimeMillis();
-                // get image path
-                String dataPath = uploadPhoto(postUpdateDto.getData(), imageName);
+                if(!postUpdateDto.getData().isEmpty()){
+                    String imageName = post.get().getUser().getName() + "_" + System.currentTimeMillis();
+                    // get image path
+                  dataPath = uploadPhoto(postUpdateDto.getData(), imageName);
+                }
+                
                 post.get().setText(postUpdateDto.getText());
                 post.get().setDataPath(postUpdateDto.getText().equals("") ? dataPath : null);
                 this.postRepository.save(post.get());
@@ -179,7 +201,7 @@ public class PostService {
 
     }
 
-    public byte[] downloadData(String filePath) throws IOException {
+    public byte[] downloadData(String filePath,String userId) throws IOException {
         String directoryPath = "src/main/resources/file/";
         File directory = new File(directoryPath);
         if (!directory.exists()) {
@@ -188,6 +210,22 @@ public class PostService {
 
         File file = new File(filePath);
         byte[] fileContent = Files.readAllBytes(file.toPath());
+        // decode user id from postCreateDto and find user by id
+        long decodedId = Long.parseLong(CryptUtil.decode(userId));
+        Optional<User> user = this.userRepository.findById(decodedId);
+        //increase user score
+        var upgradeUser = User.builder()
+                        .id(user.get().getId())
+                        .name(user.get().getName())
+                        .surname(user.get().getSurname())
+                        .email(user.get().getEmail())
+                        .password(user.get().getPassword())
+                        .username(user.get().getUsername())
+                        .score(user.get().getScore()+1)
+                        .role(user.get().getRole())
+                        .build();
+        this.userRepository.save(upgradeUser);
+
         return fileContent;
     }
 
