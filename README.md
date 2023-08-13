@@ -46,4 +46,4 @@ Detailed API documentation and usage instructions can be found [here](link-to-ap
 
 The BeautyBlend App backend project demonstrates my proficiency in Spring Boot, PostgreSQL, and RESTful API design. It has successfully improved the makeup company's online presence and user engagement through interactive photo galleries.
 
-For any inquiries or collaboration opportunities, feel free to contact me at [your-email@example.com](mailto:your-email@example.com).
+For any inquiries or collaboration opportunities, feel free to contact me at [shamkhalhuseynzade26@gmail.com](mailto:shamkhalhuseynzade26@gmail.com).
